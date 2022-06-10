@@ -1,0 +1,14 @@
+---
+name: "Samantha"
+output_dir: "."
+navbar:
+  title: "Samantha"
+  left:
+    - text: "Home"
+      href: index.html
+    - text: "About"
+      href: about.html
+    - text: "consulting"
+      href: consulting.html
+---
+      
