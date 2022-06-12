@@ -1,0 +1,172 @@
+---
+title: "Carbon Conscious"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    vertical_layout: scroll
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+# Datasets
+library(readr)
+
+# Greenhouse gas emissions by country-year, 1750 - 2020
+ghg <- read_csv('https://raw.githubusercontent.com/ericmkeen/capstone/master/co2.csv')
+
+# Greenhouse gas emissions by country-year-sector, 1990 - 2018
+sectors <- read_csv('https://raw.githubusercontent.com/ericmkeen/capstone/master/co2_sectors.csv')
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Present Day Global GHG Emissions
+
+```{r out.width="50%"}
+library(ggplot2)
+library(dplyr)
+library(leaflet)
+library(ggthemes)
+
+Present_day <- ghg %>% 
+  filter(Entity != "World") %>% 
+  filter(Year == 2020) %>% 
+  group_by(Entity, `Annual CO2 emissions (zero filled)`) %>% 
+  tally() %>% 
+  arrange(desc(`Annual CO2 emissions (zero filled)`))
+
+Present_day_CO2_head<- Present_day %>%  
+  summarise(total_CO2 = sum(`Annual CO2 emissions (zero filled)`)) %>% 
+  mutate(percent = (total_CO2/sum(total_CO2))*100) %>% 
+  arrange(desc(percent))
+
+Present_day_CO2_tail <- Present_day %>%  
+  summarise(total_CO2 = sum(`Annual CO2 emissions (zero filled)`)) %>% 
+  mutate(percent = (total_CO2/sum(total_CO2))*100) %>% 
+  arrange(desc(percent))
+
+head_plot <- ggplot(data = Present_day_CO2_head, aes( x = Entity, y = percent))+
+  geom_col(fill = "darkorchid3")+
+  theme_clean()+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title = "2020 Highest CO2 Emitters",
+       subtitle = "Top 10",
+       y = "Percent CO2 Emissions",
+       x = "Entity",
+       caption = "Sewanee DataLab 2022")
+
+head_plot +
+  scale_x_discrete(limits = c("Asia", "Upper-middle-income countries",
+                              "High-income countries",
+                              "China", "Asia (excl. China & India)",
+                              "Lower-middle-income countries",
+                              "North America", "Europe", 
+                              "United States","European Union (28)"))
+
+tail_plot <- ggplot(data = Present_day_CO2_tail, aes( x = Entity, y = percent))+
+  geom_col(fill = 'aquamarine3')+
+  theme_clean()+
+  theme(axis.text.x = element_text(angle = 90))+
+  labs(title = "2020 Lowest CO2 Emitters",
+       subtitle = "Bottom 15",
+       y = "Percent CO2 Emissions",
+       x = "Entity",
+       caption = "Sewanee DataLab 2022")
+
+tail_plot +
+  scale_x_discrete(limits = c("Antartica", "Christmas Island", 
+                              "French Equatorial Africa", 
+                              "French West Africa", 
+                              "Kuwaiti Oil Fires", "Leeward Islands",
+                              "Panama Canal Zone","Puerto Rico",
+                              "Ryukyu Islands", 
+                              "St. Kitts-Nevis-Anguilla", "Tuvalu",
+                              "Saint Helena",
+                              "Niue", "Montserrat",
+                              "Wallis and Futuna"))
+options(scipen = 999)
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Carbon Emissions Over Time
+
+```{r out.width="50%"}
+#global emissions
+globalEmissions <- ghg %>%
+  group_by(Year) %>%
+  filter(Entity == 'World') %>%
+summarise (total = sum(`Annual CO2 emissions (zero filled)`)) %>%
+  arrange(desc(total))
+
+ggplot(data = globalEmissions, aes(x=Year, y=total/1000000000)) +
+  geom_line(color = "darkred") +
+  geom_area(fill = 'darkred', alpha = 0.5) +
+  theme_clean()+
+  labs(x = "Year",
+       y = "Emissions in Billions",
+       title = "Global CO2 Emissions (in billions)",
+       subtitle = "From 1750-2020",
+       caption = "Sewanee DataLab 2022")
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Carbon Emissions by Sector
+
+```{r out.width="50%"}
+#sector-by-sector
+
+globalSec <- sectors %>%
+  filter(entity == 'World') %>%
+   group_by(sector) %>%
+summarise (total = sum(`co2`)) %>%
+  arrange(desc(total))
+
+
+ggplot(data = globalSec) +
+  geom_col(aes((x = factor(sector, level = c('Agriculture', 'Manufacturing and construction', 'Transport', 'Other', 'Electricity and heat'))), y = total/1000000000, fill = sector)) +
+  coord_flip() +
+  theme_clean()+
+  theme(legend.position = 'NONE') +
+  labs(x = "Sectors",
+       y = "Total CO2 Emissions",
+       title = "Total CO2 Emissions by Sectors",
+       subtitle = "in Billions",
+       caption = "Sewanee DataLab 2022")
+
+```
+
+Row
+-----------------------------------------------------------------------
+
+### Top 5 Most Emitting Countries
+
+```{r out.width="50%"}
+
+top_5 <- sectors %>% 
+  filter(entity != "World") %>% 
+  filter(entity %in% c("China","United States",
+           "European Union (27)","Russia",
+           "India")) %>% 
+  group_by(entity, sector) %>% 
+  summarise(total = sum(co2)) %>%
+  arrange(desc(total))
+  
+ggplot(data = top_5, aes(x = entity, 
+                         y = total/1000000000, fill = sector))+
+  geom_col()+
+  facet_wrap(~sector)+
+  theme_clean()+
+  theme(axis.text.x = element_text(angle = 90))+
+  theme(legend.position = "None")+
+  labs(title = "Top 5 Most Emitting Countries (in Billions)", 
+       subtitle = "By Sector", 
+       caption = "Sewanee DataLab 2022",
+       y = "Total",
+       x = "Entity")
+```
+

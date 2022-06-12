@@ -8,7 +8,7 @@ navbar:
       href: index.html
     - text: "About"
       href: about.html
-    - text: "consulting"
-      href: consulting.html
+    - text: "Carbon Emissions Analysis"
+      href: carbon_emissions.html
 ---
       
